@@ -1,0 +1,20 @@
+/* CONFIGURATION - mixins, variables and placeholders */
+@import "./config/__export-config";
+
+/* BASE - resets and normalizes */
+@import "./base/__export-base";
+
+/* VENDORS - frameworks and libraries */
+@import "./vendors/__export-vendors";
+
+/* STATE - behavior elements, like shown, hidden, actived... */
+@import "./state/__export-state";
+
+/* THEME - appearance elements, like colors, backgrounds, fonts... */
+@import "./theme/__export-theme";
+
+/* COMPONENTS - modules or blocks of custom elements, like header, buttons, custom sections... */
+@import "./components/__export-components";
+
+/* LAYOUT - custom pages, like home, user page, login page.. */
+@import "./layouts/__export-layouts";

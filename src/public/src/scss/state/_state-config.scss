@@ -1,0 +1,33 @@
+.is{
+    &--hidden{
+        visibility: hidden;
+        opacity: 0;
+        height: 0;
+        overflow: hidden;
+        position: absolute;
+    }
+
+    &--visible{
+        visibility: visible;
+        opacity: 1;
+        height: auto;
+        overflow: visible;
+        position: static;
+    }
+
+    &--icon{
+        font-size: 0;
+        display: inline-block;
+        background-repeat: no-repeat;
+        background-size: contain;
+        background-position: center;
+    }
+
+    &--none{
+        display: none;
+    }
+
+    &--block{
+        display: block;
+    }
+}
