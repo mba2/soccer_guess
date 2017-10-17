@@ -31,7 +31,6 @@ function retrieveAllTeams() {
                         "grupName"  => $groupName,
                         "teams"     => $group
                     ); 
-
             $group = null;       // RESETS THIS VARIABLE..IT HOLDS ALL TEAM OF A CURRENT GROUP
         }
         // ADD A TEAM'S INFORMATION INTO ITS GROUP
@@ -49,22 +48,17 @@ function retrieveAllTeams() {
     ); 
     
     echo json_encode($groups);
-   
 } 
-
-
 
 $method = $_SERVER["REQUEST_METHOD"];
 
 switch($method) {
         case 'GET':
-
             // IF NO PARAMETER IS PASSED...RETURNS FULL INFORMATION ABOUT ALL GROUPS
             if( !sizeof($_GET) ) { 
                 retrieveAllTeams();               
                 exit();
             }
-            
             break;
             case 'POST':
             
@@ -72,8 +66,6 @@ switch($method) {
                 retrieveAllTeams();               
                 exit();
             }
-
-
             break;
         default:
             break;
