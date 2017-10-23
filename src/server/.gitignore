@@ -1,0 +1,24 @@
+# BUILD PROCESS FOLDERS 
+/build
+/dist
+/deploy
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# SYSTEM FOLDERS
+.sass-cache
+/node_modules
+
+# System Files
+.DS_Store
+Thumbs.db
+src/server/configuration/*
+
+
