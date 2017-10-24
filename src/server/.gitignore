@@ -2,6 +2,7 @@
 /build
 /dist
 /deploy
+/tasks
 
 # IDEs and editors
 /.idea
