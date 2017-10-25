@@ -2,7 +2,7 @@
 /build
 /dist
 /deploy
-/server-deploy
+/server-deployed
 /tasks
 
 # IDEs and editors

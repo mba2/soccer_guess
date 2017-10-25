@@ -2,9 +2,6 @@
 // MODULES
 const gulp          = require('gulp');                  // MAIN MODULE
 const _m            = require('gulp-load-plugins')();   // THIS VARIABLE WILL HOLD ALMOST !!! ALL PLUGINS
-const util          = require('gulp-util');             // UTILITIES: ['GET CLI PASSED VARIABLES']
-const replace       = require('gulp-replace');          // A MODULE TO CHANGE SOME LINE IN DEPLOYED FILES
-const filter        = require('gulp-filter');           // A MODULE FILTER A PIPE'S CONTENT...RESTORE THIS FILTERED CONTENT ETC...
 
 // =============== MODULES THAT FAILS TO BE LOADED INTO _m VARIABLE
 const del           = require('del');                   // MODULE TO DELETE FILES AND FOLDERS
@@ -32,6 +29,8 @@ gulp.task('copy', () => {
     return gulp.src([
                     './+(api|classes|configuration)/**/*',      
                 ])
+                // HANDLING ERRORS - PLUMBER`S DEFAULT BEHAVIOR
+                .pipe(plumber())
                 /*
                     WHEN RUNNING ON A PRODUCTION ENVIRONMENT... ON ALL FILES SELECTED ABOVE,
                     FILTER THE MAIN APP CLASS NAMED 'App.php'
