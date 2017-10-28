@@ -30,7 +30,7 @@ gulp.task('copy', () => {
                     './+(api|classes|configuration)/**/*',      
                 ])
                 // HANDLING ERRORS - PLUMBER`S DEFAULT BEHAVIOR
-                .pipe(plumber())
+                .pipe(_m.plumber())
                 /*
                     WHEN RUNNING ON A PRODUCTION ENVIRONMENT... ON ALL FILES SELECTED ABOVE,
                     FILTER THE MAIN APP CLASS NAMED 'App.php'

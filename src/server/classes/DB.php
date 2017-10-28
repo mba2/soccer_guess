@@ -1,15 +1,27 @@
 <?php
+require_once("App.php");
 
-final class DB {
+final class DB extends App{
    
     public function __construct(){ }
     
-    public static function connect($connType){
-        $iniConfig = parse_ini_file("{$_SERVER['DOCUMENT_ROOT']}/soccer_guess/src/server/configuration/{$connType}-db.ini");
+    public function connect() {
+        $iniConfig = parse_ini_file("../configuration/{$this->ENV}-db.ini");
+
+        print_r($iniConfig);
+
+        try {
+            $myPDO = new PDO("{$iniConfig['driver']}:host={$iniConfig['host']};dbname={$iniConfig['dbName']}","{$iniConfig['userName']}","{$iniConfig['pass']}");         
+            return $myPDO;
+        } catch(PDOException $pdoError){
+            echo "Message: {$pdoError->getMessage()}<br>";
+            echo "Code: {$pdoError->getCode()}";
+        }
         
-        $myPDO = new PDO("{$iniConfig['driver']}:host={$iniConfig['host']};dbname={$iniConfig['dbName']}","{$iniConfig['user']}","{$iniConfig['pass']}");         
-        return $myPDO;
     }
 }
+
+$DB = new DB();
+print_r($DB->connect());
 
 ?>
