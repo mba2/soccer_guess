@@ -1,22 +1,25 @@
 <?php
 
 require_once("App.php");
+require_once("DB.php");
 
 class Groups extends App {
     
     public function __construct() { }
 
     function retrieveAllTeams() {
-    
+        // SQL STATEMENT TO RETRIEVE ALL ITEMS, SEPARETED BY GROUPS
         $allTeamsInGroupsQuery = "SELECT  *
                                     FROM sg_group_formation
                                     LEFT JOIN sg_teams USING(TEAM_ID)
                                     LEFT JOIN sg_groups USING(GROUP_ID)";
+        
+        $conn           = (new DB())->connect();                // CONNECTS TO THE DATABASE
 
-        $conn           = DB::connect("remote");
-        $query          = $conn->query($allTeamsInGroupsQuery);
-        $allTeamsInfo   = $query->fetchAll(PDO::FETCH_ASSOC);
-
+        
+        $query          = $conn->query($allTeamsInGroupsQuery); // RUNS THE QUERY
+        $allTeamsInfo   = $query->fetchAll(PDO::FETCH_ASSOC);   // STORES THE QUERYY AS A MULTIDIMENSION ARRAY
+        
         $teamsByGroup   = 4;
         $groups         = array();
         $group          = array();

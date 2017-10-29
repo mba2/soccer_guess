@@ -9,4 +9,10 @@ CREATE TABLE sg_groups (
 
  INSERT INTO sg_groups VALUES
   (NULL,'A'),
-  (NULL,'B');
+  (NULL,'B'),
+  (NULL,'C'),
+  (NULL,'D'),
+  (NULL,'E'),
+  (NULL,'F'),
+  (NULL,'G'),
+  (NULL,'H');

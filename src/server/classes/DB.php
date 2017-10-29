@@ -1,27 +1,32 @@
 <?php
 require_once("App.php");
 
-final class DB extends App{
-   
-    public function __construct(){ }
+final class DB extends App {
+
+    private $iniConfig;
+    private $localPath  = "/soccer_guess/src/server/configuration/";
+    private $remotePath = "/soccer_guess/configuration/";
+    
+
+
+    public function __construct(){ 
+
+        $currentPath = ($this->ENV === "development") ? $this->localPath : $this->remotePath;
+
+        $this->iniConfig = parse_ini_file("{$_SERVER['DOCUMENT_ROOT']}{$currentPath}{$this->ENV}-db.ini");
+        return $this;
+    }
     
     public function connect() {
-        $iniConfig = parse_ini_file("../configuration/{$this->ENV}-db.ini");
-
-        print_r($iniConfig);
-
         try {
-            $myPDO = new PDO("{$iniConfig['driver']}:host={$iniConfig['host']};dbname={$iniConfig['dbName']}","{$iniConfig['userName']}","{$iniConfig['pass']}");         
+            $myPDO = new PDO("mysql:host={$this->iniConfig['host']};dbname={$this->iniConfig['dbName']}","{$this->iniConfig['userName']}","{$this->iniConfig['pass']}");         
             return $myPDO;
-        } catch(PDOException $pdoError){
+        } 
+        catch(PDOException $pdoError){
             echo "Message: {$pdoError->getMessage()}<br>";
             echo "Code: {$pdoError->getCode()}";
         }
-        
     }
 }
-
-$DB = new DB();
-print_r($DB->connect());
 
 ?>

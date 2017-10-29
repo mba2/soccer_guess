@@ -23,6 +23,7 @@ INSERT INTO sg_teams VALUES
   (NULL,'TEAM 9','9','team_9.png'),
   (NULL,'TEAM 10','10','team_10.png'),
   (NULL,'TEAM 11','11','team_11.png'),
+  (NULL,'TEAM 12','12','team_12.png'),
   (NULL,'TEAM 13','13','team_13.png'),
   (NULL,'TEAM 14','14','team_14.png'),
   (NULL,'TEAM 15','15','team_15.png'),
@@ -43,4 +44,75 @@ INSERT INTO sg_teams VALUES
   (NULL,'TEAM 30','30','team_30.png'),
   (NULL,'TEAM 31','31','team_31.png'),
   (NULL,'TEAM 32','32','team_32.png');
+
+
+
+
+
+
+DROP TABLE IF EXISTS sg_groups;
+
+CREATE TABLE sg_groups (
+  GROUP_ID    TINYINT(5) AUTO_INCREMENT NOT NULL,
+  GROUP_NAME  CHAR(1) NOT NULL UNIQUE,
+  PRIMARY KEY(GROUP_ID)
+); 
+
+ INSERT INTO sg_groups VALUES
+  (NULL,'A'),
+  (NULL,'B'),
+  (NULL,'C'),
+  (NULL,'D'),
+  (NULL,'E'),
+  (NULL,'F'),
+  (NULL,'G'),
+  (NULL,'H');
+
+
+
+
+
+DROP TABLE IF EXISTS sg_group_formation;
+CREATE TABLE sg_group_formation (
+    TEAM_ID     TINYINT(5) NOT NULL UNIQUE,
+    GROUP_ID    TINYINT(5) NOT NULL,
+    PRIMARY KEY(TEAM_ID,GROUP_ID),
+    FOREIGN KEY(TEAM_ID) REFERENCES sg_teams(TEAM_ID),
+	FOREIGN KEY(GROUP_ID) REFERENCES sg_groups(GROUP_ID)
+);
+
+INSERT INTO sg_group_formation VALUES
+  (1,1),
+  (2,1),
+  (3,1),
+  (4,1),
+  (5,2),
+  (6,2),
+  (7,2),
+  (8,2),
+  (9,3),
+  (10,3),
+  (11,3),
+  (12,3),
+  (13,4),
+  (14,4),
+  (15,4),
+  (16,4),
+  (17,5),
+  (18,5),
+  (19,5),
+  (20,5),
+  (21,6),
+  (22,6),
+  (23,6),
+  (24,6),
+  (25,7),
+  (26,7),
+  (27,7),
+  (28,7),
+  (29,8),
+  (30,8),
+  (31,8),
+  (32,8);
+  
 
