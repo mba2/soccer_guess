@@ -1,18 +1,18 @@
 import './scss/_export.scss';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import Photo from './images/img_to_import.jpg';
+import Logo from './js/components/logo.component';
 
-const Init = () => {
-    return (
-        <div>
-            <p className="init">Hello, World!</p>
-            <img src={Photo} />
-        </div>
+const SoccerGuess = () => {
+
+  return (
+      <div>
+        <Logo/>
+      </div>
     );
 };
 
 ReactDOM.render(
-    <Init/>,
+    <SoccerGuess/>,
     document.querySelector('#app')
 );
