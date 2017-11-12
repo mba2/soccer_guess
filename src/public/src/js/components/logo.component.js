@@ -1,17 +1,17 @@
 import React from 'react';
-import ImageLogo from './../../images/soccer-guess-logo.png';
+import LogoImage from './../../images/soccer-guess-logo.png';
 
 /*
   LOGO COMPONENT
   A basic wrapper contenting the logo of the app
 */
-const Logo = () => {
+const LogoComponent = () => {
 
   return (
-    <div>
-      <img src={ImageLogo} />
+    <div className="sg-component__logo">
+      <img src={LogoImage} />
     </div>
   );
 }
 
-export default Logo;
+export default LogoComponent;

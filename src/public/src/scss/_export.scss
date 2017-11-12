@@ -13,6 +13,9 @@
 /* THEME - appearance elements, like colors, backgrounds, fonts... */
 @import "./theme/__export-theme";
 
+/* PAGES - Entire indivual pages... */
+@import "./pages/__export-pages";
+
 /* COMPONENTS - modules or blocks of custom elements, like header, buttons, custom sections... */
 @import "./components/__export-components";
 
