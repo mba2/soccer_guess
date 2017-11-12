@@ -1,6 +1,6 @@
 module.exports = {
     "parser": "babel-eslint",
-    "extends": "eslint:recommended",
+    "extends": "plugin:react/recommended",
     "env": {
         "browser": true,
         "node": true
@@ -15,9 +15,9 @@ module.exports = {
     },
     "rules": {
         // enable additional rules
-        "indent": ["warn", 4],
+        "indent": ["warn", 2],
         "no-unused-vars": ["warn", { "vars": "all", "args": "after-used", "ignoreRestSiblings": false }],
-        
+
         // override default options for rules from base configurations
         "comma-dangle": ["warn", "always"],
         "no-cond-assign": ["warn", "always"],
