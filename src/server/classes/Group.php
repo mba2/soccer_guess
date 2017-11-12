@@ -1,5 +1,0 @@
-<?php
-
-final class Group {
-    
-} 
