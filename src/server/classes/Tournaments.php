@@ -14,28 +14,26 @@ require_once("DB.php");
     private $urlParameters;
     
     public function __construct() { 
-        echo "<pre>Starting the " . __CLASS__ . " class!! <br><br>";
-        $this->getAllParameters();
     }
     
     // PARENT METHODS
     // private function setRequestMethod() {}
 
-    private function getRequestMethod() {
-        return $this->requestMethod;
+    // private function getRequestMethod() {
+    //     return $this->requestMethod;
+    // }
+    
+    private function setUrlParameters() {
+        return $this->urlParameters = $_GET;                                   // SET ALL POSSIBLE PARAMETERS PASSED BY URL 
     }
     
-    private function getParameters() {
-        return $this->urlParameters = $_GET;                                   // GET ALL POSSIBLE PARAMETERS PASSED BY URL 
+    private function setAjaxParameters() {
+        return $this->ajaxParameters = file_get_contents('php://input');       // SET ALL POSSIBLE PARAMETERS PASSED BY AN AJAX CALL
     }
     
-    private function getAjaxParameters() {
-        return $this->ajaxParameters = file_get_contents('php://input');       // GET ALL POSSIBLE PARAMETERS PASSED BY AN AJAX CALL
-    }
-    
-    private function getAllParameters() {
-        $this->urlParameters = $_GET;                                   // GET ALL POSSIBLE PARAMETERS PASSED BY URL 
-        $this->ajaxParameters = file_get_contents('php://input');       // GET ALL POSSIBLE PARAMETERS PASSED BY AN AJAX CALL
+    private function setAllParameters() {
+        $this->setUrlParameters();          // SET ALL POSSIBLE PARAMETERS PASSED BY URL 
+        $this->setAjaxParameters();         // SET ALL POSSIBLE PARAMETERS PASSED BY AN AJAX CALL
     }
 
     private function checkRequiredParemetes() {
@@ -70,22 +68,87 @@ require_once("DB.php");
     }
 
     public function response_GET() {
-        echo "Starting a GET response...<br><br>";
+        // SINCE IT'S A 'GET' REQUEST WE'RE ONLY GONNA NEED PARAMETERS PRESENTS INSIDE THE $_GET SUPERGLOBAL
+        $this->setUrlParameters();   
+
+        // echo "<pre> response_GET()....<br><br>";
+
+        // echo "Parameters passed via ajax :<br><br>";
+        // print_r($this->ajaxParameters);
         
+        // echo "<br><br><br>Parameters passed via URL :<br><br>";
+        // print_r($this->urlParameters);
+
         // WHEN THE GET REQUEST HAS NO PARAMETERS...RETRIEVE ALL TOURNAMENTS
-        if(empty($this->urlParameter)) {
-            echo "Show all tournaments";
+        if(empty($this->urlParameters)) {
+            
+            try{
+                $conn = (new DB())->connect();                  // STARTS A CONNECTION
+                $sql_stmt = "SELECT * FROM SG_TOURNAMENTS;";    // DEFINES A SQL STATEMENT
+                $query = $conn->query($sql_stmt);               // RUNS THE QUERY
+                
+                if($query->rowCount()) {
+                    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+                    echo json_encode($result);
+                }
+                else {
+                    echo json_encode(
+                        array(
+                            "request type" => $_SERVER['REQUEST_METHOD'], 
+                            "status" => "failure", 
+                            "message" => "Sorry, could not find any tournament on database",
+                            'code' => '002'
+                        )
+                    );
+                }
+
+            } catch(PDOExeption $error) {
+                echo "Message: {$error->getMessage()}<br>";
+                echo "Code: {$error->getCode()}";
+            }
             return;
         }
 
-        // CHECK FOR AN 'ID' PARAMETER
-        
+        /* 
+        * CHECK FOR AN 'ID' PARAMETER. THE URL MUST HAVE ONLY AN INTEGER 
+        */
+        // if( sizeof($this->urlParameters) === 1) {
+        //     $tournamentID = key($this->urlParameters);
+        //     echo "id: {$tournamentID}";
+        //     try {
+        //         $conn = (new DB())->connect();
+        //         $selectQuery = "SELECT * FROM `SG_TOURNAMENTS` WHERE `id` = {$tournamentID}";
+        //         if($query->rowCount()) {
+        //             $result = $query->fetchAll(PDO::FETCH_ASSOC);
+        //             echo json_encode($result);
+        //         }
+
+        //     }catch(PDOException $error){
+        //         echo "Message: {$error->getMessage()}<br>";
+        //         echo "Code: {$error->getCode()}";
+        //     }
+            
+        //     return;
+        // } 
+
+        /* 
+        * CHECK FOR AN 'ID' PARAMETER. THE URL MUST HAVE ONLY AN INTEGER 
+        */
+        // echo json_encode(
+        //     array(
+        //         "request type" => $_SERVER['REQUEST_METHOD'], 
+        //         "status" => "failure", 
+        //         "message" => "Sorry, your request doesn't fit any valid structure.",
+        //         'code' => '003'
+        //     )
+        // );
         
     }
     public function response() {
+        
         switch ($_SERVER['REQUEST_METHOD']) {
-            case 'GET':
-                $this->requestMethod = "GET";
+            case 'GET':  
+                // CALL A CUSTOM RESPONSE FOR MADE FOR A 'GET' REQUEST
                 $this->response_GET();
                 break;
             case 'POST':;
