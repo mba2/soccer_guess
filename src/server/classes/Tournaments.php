@@ -68,20 +68,30 @@ require_once("DB.php");
     }
 
     public function response_GET() {
-        // SINCE IT'S A 'GET' REQUEST WE'RE ONLY GONNA NEED PARAMETERS PRESENTS INSIDE THE $_GET SUPERGLOBAL
+        /* 
+        * SINCE IT'S A 'GET' REQUEST WE'RE ONLY GONNA NEED PARAMETERS PRESENT INSIDE THE $_GET SUPERGLOBAL. SO, SET THOSE...
+        */ 
         $this->setUrlParameters();   
-
-        // echo "<pre> response_GET()....<br><br>";
-
-        // echo "Parameters passed via ajax :<br><br>";
-        // print_r($this->ajaxParameters);
         
-        // echo "<br><br><br>Parameters passed via URL :<br><br>";
-        // print_r($this->urlParameters);
+        /*  
+        * IF MORE THAN ONE PARAMETERS WERE PASSED...TERMINATE THIS FUNCTION
+        */
+        if( sizeof($this->urlParameters) > 1 ) {
+            echo json_encode(
+                array(
+                    "request type" => $_SERVER['REQUEST_METHOD'], 
+                    "status" => "failure", 
+                    "message" => "Sorry, your request doesn't fit any valid structure. Try to pass a key named 'id' and a value for it. e.g : ?id=12",
+                    'code' => '001'
+                )
+            );
+            exit();
+        }
 
-        // WHEN THE GET REQUEST HAS NO PARAMETERS...RETRIEVE ALL TOURNAMENTS
-        if(empty($this->urlParameters)) {
-            
+        /* 
+        * WHEN THE GET REQUEST HAS NO PARAMETERS...RETRIEVE ALL TOURNAMENTS
+        */
+        if(empty($this->urlParameters)) {            
             try{
                 $conn = (new DB())->connect();                  // STARTS A CONNECTION
                 $sql_stmt = "SELECT * FROM SG_TOURNAMENTS;";    // DEFINES A SQL STATEMENT
@@ -101,7 +111,6 @@ require_once("DB.php");
                         )
                     );
                 }
-
             } catch(PDOExeption $error) {
                 echo "Message: {$error->getMessage()}<br>";
                 echo "Code: {$error->getCode()}";
@@ -110,39 +119,36 @@ require_once("DB.php");
         }
 
         /* 
-        * CHECK FOR AN 'ID' PARAMETER. THE URL MUST HAVE ONLY AN INTEGER 
+        * CHECK FOR AN 'ID' PARAMETER. THE VALUE OF THIS PARAMETER MUST BE OF 'ID'
+        * AND ITS VALUE MUST BE AN 'INTEGER'
         */
-        // if( sizeof($this->urlParameters) === 1) {
-        //     $tournamentID = key($this->urlParameters);
-        //     echo "id: {$tournamentID}";
-        //     try {
-        //         $conn = (new DB())->connect();
-        //         $selectQuery = "SELECT * FROM `SG_TOURNAMENTS` WHERE `id` = {$tournamentID}";
-        //         if($query->rowCount()) {
-        //             $result = $query->fetchAll(PDO::FETCH_ASSOC);
-        //             echo json_encode($result);
-        //         }
+        if( strtolower( key($this->urlParameters) === "id") ) {      // CONVERTS THE GIVEN PARAMETER TO LOWERCASE AND COMPART IT TO 'id'
+            $id = $this->urlParameters['id'];    
+            try {
+                $conn = (new DB())->connect();
+                $selectStatment = "SELECT * FROM `SG_TOURNAMENTS` WHERE `id` = {$id}";
+                $query = $conn->query($selectStatment);
+                if($query->rowCount()) {
+                    $result = $query->fetchAll(PDO::FETCH_ASSOC);
+                    echo json_encode($result);
+                }else {
+                    echo json_encode(
+                        array(
+                            "request type" => $_SERVER['REQUEST_METHOD'], 
+                            "status" => "failure", 
+                            "message" => "Sorry, could not find any tournament on database",
+                            'code' => '002'
+                        )
+                    );
+                }
 
-        //     }catch(PDOException $error){
-        //         echo "Message: {$error->getMessage()}<br>";
-        //         echo "Code: {$error->getCode()}";
-        //     }
+            }catch(PDOException $error){
+                echo "Message: {$error->getMessage()}<br>";
+                echo "Code: {$error->getCode()}";
+            }
             
-        //     return;
-        // } 
-
-        /* 
-        * CHECK FOR AN 'ID' PARAMETER. THE URL MUST HAVE ONLY AN INTEGER 
-        */
-        // echo json_encode(
-        //     array(
-        //         "request type" => $_SERVER['REQUEST_METHOD'], 
-        //         "status" => "failure", 
-        //         "message" => "Sorry, your request doesn't fit any valid structure.",
-        //         'code' => '003'
-        //     )
-        // );
-        
+            return;
+        }         
     }
     public function response() {
         
