@@ -72,21 +72,28 @@ require_once("DB.php");
         * SINCE IT'S A 'GET' REQUEST WE'RE ONLY GONNA NEED PARAMETERS PRESENT INSIDE THE $_GET SUPERGLOBAL. SO, SET THOSE...
         */ 
         $this->setUrlParameters();   
-        
+
         /*  
-        * IF MORE THAN ONE PARAMETERS WERE PASSED...TERMINATE THIS FUNCTION
+        *   TERMINATE THIS FUNCTION IF:
+        *
+        * - MORE THAN ONE PARAMETERS WERE PASSED...
+        *           OR
+        * - THE PARAMETER'S NAME HAS NOT THE VALUE OF 'id'...  
         */
-        if( sizeof($this->urlParameters) > 1 ) {
-            echo json_encode(
-                array(
-                    "request type" => $_SERVER['REQUEST_METHOD'], 
-                    "status" => "failure", 
-                    "message" => "Sorry, your request doesn't fit any valid structure. Try to pass a key named 'id' and a value for it. e.g : ?id=12",
-                    'code' => '001'
-                )
-            );
-            exit();
-        }
+        if( sizeof($this->urlParameters) > 1 || 
+            strtolower( key($this->urlParameters) !== "id")             // CONVERTS THE GIVEN PARAMETER TO LOWERCASE AND COMPART IT TO 'id'
+          )
+           {
+                echo json_encode(
+                    array(
+                        "request type" => $_SERVER['REQUEST_METHOD'], 
+                        "status" => "failure", 
+                        "message" => "Sorry, your request doesn't fit any valid structure. For a single 'id' try this: ?id=12. For multiple 'ids' try this: ?id=12,13,14",
+                        'code' => '001'
+                    )
+                );
+                exit();
+            }
 
         /* 
         * WHEN THE GET REQUEST HAS NO PARAMETERS...RETRIEVE ALL TOURNAMENTS
@@ -119,37 +126,41 @@ require_once("DB.php");
         }
 
         /* 
-        * CHECK FOR AN 'ID' PARAMETER. THE VALUE OF THIS PARAMETER MUST BE OF 'ID'
-        * AND ITS VALUE MUST BE AN 'INTEGER'
+        * WHEN THE REQUEST HAS ONLY AND PARAMETER AND IT HAS A VALUE OF 'ID'... PERFORMS THE QUERY 
         */
-        if( strtolower( key($this->urlParameters) === "id") ) {      // CONVERTS THE GIVEN PARAMETER TO LOWERCASE AND COMPART IT TO 'id'
-            $id = $this->urlParameters['id'];    
-            try {
-                $conn = (new DB())->connect();
-                $selectStatment = "SELECT * FROM `SG_TOURNAMENTS` WHERE `id` = {$id}";
-                $query = $conn->query($selectStatment);
-                if($query->rowCount()) {
-                    $result = $query->fetchAll(PDO::FETCH_ASSOC);
-                    echo json_encode($result);
-                }else {
-                    echo json_encode(
-                        array(
-                            "request type" => $_SERVER['REQUEST_METHOD'], 
-                            "status" => "failure", 
-                            "message" => "Sorry, could not find any tournament on database",
-                            'code' => '002'
-                        )
-                    );
-                }
+        $ids = $this->urlParameters['id'];    
+        // TREAT THE RECEIVED STRING AND FIXES SOME POSSIBLE ERRORS : e.g REMOVE WHITESPACES, UNEXPECTED COMMAS AND SO ON...
+        $ids = preg_replace('/,[\s,]+/i',',',$ids);  
+        $ids = preg_replace('/,$/i','',$ids);
 
-            }catch(PDOException $error){
-                echo "Message: {$error->getMessage()}<br>";
-                echo "Code: {$error->getCode()}";
+        try {
+            $conn = (new DB())->connect();
+            $selectStatment = "SELECT * FROM `SG_TOURNAMENTS` 
+                                        WHERE `ID` IN ({$ids})";
+            $query = $conn->query($selectStatment);
+            if($query->rowCount()) {
+                $result = $query->fetchAll(PDO::FETCH_ASSOC);
+                echo json_encode($result);
+            }else {
+                echo json_encode(
+                    array(
+                        "request type" => $_SERVER['REQUEST_METHOD'], 
+                        "status" => "failure", 
+                        "message" => "Sorry, could not find any tournament on database",
+                        'code' => '002'
+                    )
+                );
             }
-            
-            return;
-        }         
+        }catch(PDOException $error){
+            echo "Message: {$error->getMessage()}<br>";
+            echo "Code: {$error->getCode()}";
+        }
     }
+
+    public function response_POST() {
+
+    }
+
     public function response() {
         
         switch ($_SERVER['REQUEST_METHOD']) {
@@ -158,7 +169,8 @@ require_once("DB.php");
                 $this->response_GET();
                 break;
             case 'POST':;
-                $this->requestMethod = "POST";
+                // CALL A CUSTOM RESPONSE FOR MADE FOR A 'GET' REQUEST
+                $this->response_POST();
                 break;
             default:
                 $this->requestMethod = "GET";
