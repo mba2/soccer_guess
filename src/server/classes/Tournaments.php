@@ -40,108 +40,29 @@ require_once("DB.php");
         // RETRIEVE ALL  MISSING REQUIRED PARAMETERS
     }
 
-    private function checkEmptyParameters() {
-        // echo "without encode"; 
-        // print_r($this->ajaxParameters);
-        // echo gettype($this->ajaxParameters);
-        // echo "<br>\n\n<br>";
-        // echo "with encode"; 
-        // print_r(json_encode($this->ajaxParameters));
-
-        print_r('empty($this->ajaxParameters) ===> ' . empty($this->ajaxParameters));
-        print_r(' print_r(($this->ajaxParameters) ===> ' . $this->ajaxParameters);
-
-
-        // echo empty($this->ajaxParameters);
-
-        if( empty( $this->urlParameters) && empty($this->ajaxParameters) ){
-            echo json_encode(
-                array(
-                    "request type" => $_SERVER['REQUEST_METHOD'], 
-                    "status" => "failure", 
-                    "message" => "You have not passed any parameter",
-                    'code' => '001'
-                )
-            );
-            exit();
+    /**
+     *  @param  
+     *      $wu (boolean) : indicates if the user needs to be warned that it haven't passed any parameter ($wu means 'warnUser')
+     */
+    private function emptyParameters($wu) {
+        if( empty( $this->urlParameters) && empty($this->ajaxParameters) ) {
+            if($wu) $this->e_emptyParameters();     // WARN THE USER THAT IT HAVEN'T PASSED ANY PARAMETER          
+            return true;                            // INDICATES THAT NONE PARAMETERS HAVE BEEN PASSED
         }
+        return false; // INDICATES THAT AT LEAST ONE PARAMETER HAS BEEN PASSED
     }
 
-    public function response_GET() {
-        /* 
-        * SINCE IT'S A 'GET' REQUEST WE'RE ONLY GONNA NEED PARAMETERS PRESENT INSIDE THE $_GET SUPERGLOBAL. SO, SET THOSE...
-        */ 
-        $this->setUrlParameters();   
-
-        /*  
-        *   TERMINATE THIS FUNCTION IF:
-        *
-        * - MORE THAN ONE PARAMETERS WERE PASSED...
-        *           OR
-        * - THE PARAMETER'S NAME HAS NOT THE VALUE OF 'id'...  
-        */
-        if( sizeof($this->urlParameters) > 1 || 
-            strtolower( key($this->urlParameters) !== "id")             // CONVERTS THE GIVEN PARAMETER TO LOWERCASE AND COMPART IT TO 'id'
-          )
-           {
-                echo json_encode(
-                    array(
-                        "request type" => $_SERVER['REQUEST_METHOD'], 
-                        "status" => "failure", 
-                        "message" => "Sorry, your request doesn't fit any valid structure. For a single 'id' try this: ?id=12. For multiple 'ids' try this: ?id=12,13,14",
-                        'code' => '001'
-                    )
-                );
-                exit();
-            }
-
-        /* 
-        * WHEN THE GET REQUEST HAS NO PARAMETERS...RETRIEVE ALL TOURNAMENTS
-        */
-        if(empty($this->urlParameters)) {            
-            try{
-                $conn = (new DB())->connect();                  // STARTS A CONNECTION
-                $sql_stmt = "SELECT * FROM SG_TOURNAMENTS;";    // DEFINES A SQL STATEMENT
-                $query = $conn->query($sql_stmt);               // RUNS THE QUERY
-                
-                if($query->rowCount()) {
-                    $result = $query->fetchAll(PDO::FETCH_ASSOC);
-                    echo json_encode($result);
-                }
-                else {
-                    echo json_encode(
-                        array(
-                            "request type" => $_SERVER['REQUEST_METHOD'], 
-                            "status" => "failure", 
-                            "message" => "Sorry, could not find any tournament on database",
-                            'code' => '002'
-                        )
-                    );
-                }
-            } catch(PDOExeption $error) {
-                echo "Message: {$error->getMessage()}<br>";
-                echo "Code: {$error->getCode()}";
-            }
-            return;
-        }
-
-        /* 
-        * WHEN THE REQUEST HAS ONLY AND PARAMETER AND IT HAS A VALUE OF 'ID'... PERFORMS THE QUERY 
-        */
-        $ids = $this->urlParameters['id'];    
-        // TREAT THE RECEIVED STRING AND FIXES SOME POSSIBLE ERRORS : e.g REMOVE WHITESPACES, UNEXPECTED COMMAS AND SO ON...
-        $ids = preg_replace('/,[\s,]+/i',',',$ids);  
-        $ids = preg_replace('/,$/i','',$ids);
-
-        try {
-            $conn = (new DB())->connect();
-            $selectStatment = "SELECT * FROM `SG_TOURNAMENTS` 
-                                        WHERE `ID` IN ({$ids})";
-            $query = $conn->query($selectStatment);
+    public function getAllTournaments() {
+        try{
+            $conn = (new DB())->connect();                  // STARTS A CONNECTION
+            $sql_stmt = "SELECT * FROM SG_TOURNAMENTS;";    // DEFINES A SQL STATEMENT
+            $query = $conn->query($sql_stmt);               // RUNS THE QUERY
+            
             if($query->rowCount()) {
                 $result = $query->fetchAll(PDO::FETCH_ASSOC);
                 echo json_encode($result);
-            }else {
+            }
+            else {
                 echo json_encode(
                     array(
                         "request type" => $_SERVER['REQUEST_METHOD'], 
@@ -151,10 +72,113 @@ require_once("DB.php");
                     )
                 );
             }
+        } catch(PDOExeption $error) {
+            echo "Message: {$error->getMessage()}<br>";
+            echo "Code: {$error->getCode()}";
+        }
+        exit();
+    }
+
+    public function getSpecificTournaments() {
+        $givenInfo = json_decode( $this->urlParameters['info'] );
+
+        
+        $ids = implode(",",$givenInfo->ids);    //CLEAN THE ARRAY OF IDS PASSED BY THE USER
+        
+        // ADDITIONAL OPTIONS
+        // $getTeams = $givenInfo->getTeams;
+        // if($getTeams) {
+        //     $sql_allTournamentsWithTeams = "SEle.....";
+        // } 
+
+        // MOUNT THE SQL STATEMENT
+        $sql_allTournaments = "SELECT * FROM `SG_TOURNAMENTS`
+                                        WHERE `ID` IN ({$ids})";
+
+        try {
+            $conn = (new DB())->connect();
+            $query = $conn->query($sql_allTournaments);
+            if($query->rowCount()) {
+                $result = $query->fetchAll(PDO::FETCH_ASSOC);
+                echo json_encode($result);
+            }else {
+                    $this->e_noTournamentsFound();
+            }
         }catch(PDOException $error){
             echo "Message: {$error->getMessage()}<br>";
             echo "Code: {$error->getCode()}";
         }
+    }
+
+    // ERRORS
+    public function e_invalidStructure() {
+        echo json_encode(
+                array(
+                    "request type" => $_SERVER['REQUEST_METHOD'], 
+                    "status" => "failure", 
+                    "message" => "Sorry, your request doesn't fit any valid structure. Try something like this: ?info={ids:'12,13,14',...}",
+                    'code' => '001'
+                )
+        );
+        exit();
+    }
+
+    public function e_emptyParameters() {
+        echo json_encode(
+            array(
+                "request type" => $_SERVER['REQUEST_METHOD'], 
+                "status" => "failure", 
+                "message" => "You have not passed any parameter",
+                'code' => '001'
+            )
+        ); 
+    }
+
+    public function e_noTournamentsFound() {
+        echo json_encode(
+            array(
+                "request type" => $_SERVER['REQUEST_METHOD'], 
+                "status" => "failure", 
+                "message" => "Sorry, could not find any tournament on database",
+                'code' => '002'
+            )
+        );
+    }
+
+
+
+    // RESPONSES
+
+
+    public function response_GET() {
+        /* 
+        * SINCE IT'S A 'GET' REQUEST WE'RE ONLY GONNA NEED PARAMETERS PRESENT INSIDE THE $_GET SUPERGLOBAL. SO, SET THOSE...
+        */ 
+        $this->setUrlParameters();   
+    
+        /*  
+        *   TERMINATE THIS FUNCTION IF:        *
+        *       - MORE THAN ONE PARAMETERS WERE PASSED... 
+        *       - AN ARGUMENT NAMED 'info' WASN'T PASSED... 
+        */
+        if( sizeof($this->urlParameters) > 1) {
+            if( !key_exists("info",$this->urlParameters)) $this->e_invalidStructure();
+        } 
+
+        /* 
+         * WHEN THE GET REQUEST HAS NO PARAMETERS...RETRIEVE ALL TOURNAMENTS
+        */
+        if( $this->emptyParameters(false) ) $this->getAllTournaments();
+
+        /* 
+         * WHEN THE GET REQUEST HA PARAMETERS AND THEY'RE VALID... RETRIEVE THE REQUIRED TOURNAMENTS
+        */
+        $this->getSpecificTournaments(); 
+
+
+        // TREAT THE RECEIVED STRING AND FIXES SOME POSSIBLE ERRORS : e.g REMOVE WHITESPACES, UNEXPECTED COMMAS AND SO ON...
+        // $ids = preg_replace('/,[\s,]+/i',',',$ids);  
+        // $ids = preg_replace('/,$/i','',$ids);
     }
 
     public function response_POST() {
