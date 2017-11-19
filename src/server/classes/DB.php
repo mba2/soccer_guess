@@ -19,7 +19,8 @@ final class DB extends App {
     
     public function connect() {
         try {
-            $myPDO = new PDO("mysql:host={$this->iniConfig['host']};dbname={$this->iniConfig['dbName']}","{$this->iniConfig['userName']}","{$this->iniConfig['pass']}");         
+            $myPDO = new PDO("mysql:host={$this->iniConfig['host']};dbname={$this->iniConfig['dbName']}","{$this->iniConfig['userName']}","{$this->iniConfig['pass']}");     
+            $myPDO->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);    
             return $myPDO;
         } 
         catch(PDOException $pdoError){
