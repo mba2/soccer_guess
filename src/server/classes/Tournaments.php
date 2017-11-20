@@ -124,7 +124,6 @@ require_once("DB.php");
 
     public function addTournaments() {
         $tournamentInfo = json_decode( $this->urlParameters['info'],true );
-        $tournamentInfo = array_change_key_case($tournamentInfo,CASE_UPPER);
         
         try {
             $conn = (new DB())->connect();
@@ -138,6 +137,7 @@ require_once("DB.php");
             $sql_insertTournaments->bindParam(':flag', $flag);            
             
             foreach ($tournamentInfo as $tournament) {
+                $tournament = array_change_key_case($tournament,CASE_UPPER);
                 $tournamentName = $tournament['NAME'];
                 $flag = $tournament['FLAG'];
                 
