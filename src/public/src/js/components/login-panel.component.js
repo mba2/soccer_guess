@@ -18,8 +18,8 @@ class LoginPanel extends React.Component {
           <div>
             <button>Login</button>
             <div>
-              <a href="#">Have you forgotten your password</a>
-              <span>Not a member yet?</span>
+              <a href="#">Have you forgotten your password</a><br/>
+              <span>Not a member yet? </span>
               <a href="#">Sign-up</a>
             </div>
           </div>
