@@ -4,7 +4,7 @@ require_once("App.php");
 require_once("DB.php");
 
 
- class Tournaments extends App {
+ class Teams extends App {
      
     private $requiredParameters = array();
     private $missingParameters = array();
@@ -52,33 +52,25 @@ require_once("DB.php");
         return false; // INDICATES THAT AT LEAST ONE PARAMETER HAS BEEN PASSED
     }
 
-    public function getAllTournaments() {
+    public function getAllTeams() {
         try{
             // STARTS A CONNECTION
             $conn = (new DB())->connect();                  
             // DEFINES A SQL STATEMENT
-            $sql_stmt = "SELECT 
+            $sql_selectTeams = "SELECT 
                             `ID`,
-                            `NAME`,
-                            `FLAG` FROM `SG_TOURNAMENTS`
+                            `FULLNAME`,
+                            `SHORTNAME`,
+                            `FLAG` FROM `SG_TEAMS`
                              WHERE `ACTIVE` != '0';";    
-            // RUNS THE QUERY
-            $query = $conn->query($sql_stmt);               
+            // PREPARES THE QUERY
+            $prepareSelect = $conn->prepare($sql_selectTeams);  
             
-            if($query->rowCount()) {
-                $result = $query->fetchAll(PDO::FETCH_ASSOC);
+            if($prepareSelect->execute() && $prepareSelect->rowCount()) {
+                $result = $prepareSelect->fetchAll(PDO::FETCH_ASSOC);
                 echo json_encode($result);
             }
-            else {
-                echo json_encode(
-                    array(
-                        "request type" => $_SERVER['REQUEST_METHOD'], 
-                        "status" => "failure", 
-                        "message" => "Sorry, could not find any tournament on database",
-                        'code' => '002'
-                    )
-                );
-            }
+            else  $this->e_noTeamsFound();
         } catch(PDOExeption $error) {
             echo "Message: {$error->getMessage()}<br>";
             echo "Code: {$error->getCode()}";
@@ -86,73 +78,76 @@ require_once("DB.php");
         exit();
     }
 
-    public function getSpecificTournaments() {
-        $givenInfo = json_decode( $this->urlParameters['info'],true );
-        $givenInfo = array_change_key_case($givenInfo,CASE_UPPER);
+    public function getSpecificTeams() {
+        $teamsInfo = json_decode( $this->urlParameters['info'],true );
+        $teamsInfo = array_change_key_case($teamsInfo,CASE_UPPER);
 
-        $ids = implode(",",$givenInfo['ID']);    //CLEAN THE ARRAY OF IDS PASSED BY THE USER
         
         // ADDITIONAL OPTIONS
         // $getTeams = $givenInfo->getTeams;
         // if($getTeams) {
-        //     $sql_allTournamentsWithTeams = "SEle.....";
-        // } 
-
-        // MOUNT THE SQL STATEMENT
-        $sql_allTournaments = "SELECT 
-                                    `ID`,
-                                    `NAME`,
-                                    `FLAG` FROM `SG_TOURNAMENTS`
-                                    WHERE 
-                                        `ID` IN ({$ids})
-                                        AND `ACTIVE` != 0";
-
+            //     $sql_allTournamentsWithTeams = "SEle.....";
+            // } 
         try {
-            $conn = (new DB())->connect();
-            $query = $conn->query($sql_allTournaments);
-            if($query->rowCount()) {
-                $result = $query->fetchAll(PDO::FETCH_ASSOC);
-                echo json_encode($result);
-            }else {
-                    $this->e_noTournamentsFound();
-            }
+            // START A CONNECTION
+            $conn = (new DB())->connect();              
+            // STORE THE ARRAY CONTAINING ALL DESIRED ID'S
+            $ids = $teamsInfo['ID'];    
+            // CREATE THE PLACEHOLDERS TO BE USED WITH ->bindValue()
+            $placeholders = implode(",", array_fill(0, count($ids),"?"));
+            // DEFINES A SQL STATEMENT
+            $sql_selectTeams = "SELECT 
+                `ID`,
+                `FULLNAME`,
+                `SHORTNAME`,
+                `FLAG` FROM `SG_TEAMS`
+                    WHERE `ID` IN ({$placeholders})
+                    AND `ACTIVE` != '0';";    
+            // PREPARES THE QUERY
+            $prepareSelect = $conn->prepare($sql_selectTeams);  
+            // EXECUTE IT            
+            if($prepareSelect->execute($ids) && $prepareSelect->rowCount()) {
+                // IF THE QUERY RAN SUCCESSFULLY AND AT LEAST ONE RESULT WAS RETURNED...
+                $result = $prepareSelect->fetchAll(PDO::FETCH_ASSOC);   // FETCH THE RESULT IN AN ASSOCIATIVE ARRAY
+                echo json_encode($result);      // AND PRINT IT
+            }else $this->e_noTeamsFound();
         }catch(PDOException $error){
             echo "Message: {$error->getMessage()}<br>";
             echo "Code: {$error->getCode()}";
         }
     }
 
-    public function addTournaments() {
-        $tournamentInfo = json_decode( $this->urlParameters['info'],true );
-        $tournamentInfo = array_change_key_case($tournamentInfo,CASE_UPPER);
+    public function addTeams() {
+        $teamsInfo = json_decode( $this->urlParameters['info'],true );
         
         try {
             $conn = (new DB())->connect();
 
             // MOUNT THE SQL STATEMENT
-            $sql_insertTournaments = $conn->prepare("INSERT INTO `SG_TOURNAMENTS` 
-                                                        (`NAME`,`FLAG`)
-                                                        VALUES (:tournamentName, :flag)");
+            $sql_insertTeams = $conn->prepare("INSERT INTO `SG_TEAMS` 
+                                                            (`FULLNAME`,
+                                                            `SHORTNAME`,
+                                                            `FLAG`)
+                                                        VALUES 
+                                                            (:fullName, 
+                                                            :shortName, 
+                                                            :flag)");
 
-            $sql_insertTournaments->bindParam(':tournamentName', $tournamentName);
-            $sql_insertTournaments->bindParam(':flag', $flag);            
+            $sql_insertTeams->bindParam(':fullName' , $fullName);
+            $sql_insertTeams->bindParam(':shortName', $shortName);            
+            $sql_insertTeams->bindParam(':flag', $flag);            
             
-            foreach ($tournamentInfo as $tournament) {
-                $tournamentName = $tournament['NAME'];
-                $flag = $tournament['FLAG'];
+            foreach ($teamsInfo as $team) {
+                $team = array_change_key_case($team,CASE_UPPER);
                 
-                $sql_insertTournaments->execute();    
+                $fullName = $team['FULLNAME'];
+                $shortName = $team['SHORTNAME'];
+                $flag = $team['FLAG'];
+                
+                $sql_insertTeams->execute();    
             }
-            echo json_encode(
-                array(
-                    "request type" => $_SERVER['REQUEST_METHOD'], 
-                    "status" => "success", 
-                    "message" => "Tournament(s) successfully inserted. Plis bilivi mi!",
-                    'code' => '100'
-                )
-            );
 
-
+            $this->s_insert();
         }catch(PDOException $error){
             echo "Message: {$error->getMessage()}<br>";
             echo "Code: {$error->getCode()}";
@@ -267,15 +262,16 @@ require_once("DB.php");
         ); 
     }
 
-    public function e_noTournamentsFound() {
+    public function e_noTeamsFound() {
         echo json_encode(
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "failure", 
-                "message" => "Sorry, could not find any tournament on database",
-                'code' => '003'
+                "message" => "Sorry, could not find any team on database",
+                'code' => '001'
             )
         );
+        exit();
     }
 
     public function e_updates() {
@@ -292,6 +288,18 @@ require_once("DB.php");
 
 
     // RESPONSES USERS FEEDBACK
+    public function s_insert() {
+        echo json_encode(
+            array(
+                "request type" => $_SERVER['REQUEST_METHOD'], 
+                "status" => "success", 
+                "message" => "Team(s) successfully updated. Plis bilivi mi!",
+                'code' => '101'
+            )
+        );
+        exit();
+    }
+    
     public function s_update() {
         echo json_encode(
             array(
@@ -347,12 +355,12 @@ require_once("DB.php");
         /* 
          * WHEN THE GET REQUEST HAS NO PARAMETERS...RETRIEVE ALL TOURNAMENTS
         */
-        if( $this->emptyParameters(false) ) $this->getAllTournaments();
+        if( $this->emptyParameters(false) ) $this->getAllTeams();
 
         /* 
          * WHEN THE GET REQUEST HA PARAMETERS AND THEY'RE VALID... RETRIEVE THE REQUIRED TOURNAMENTS
         */
-        $this->getSpecificTournaments(); 
+        $this->getSpecificTeams(); 
 
 
         // TREAT THE RECEIVED STRING AND FIXES SOME POSSIBLE ERRORS : e.g REMOVE WHITESPACES, UNEXPECTED COMMAS AND SO ON...
@@ -366,7 +374,7 @@ require_once("DB.php");
         */ 
         $this->setAllParameters();   
 
-        $this->addTournaments();
+        $this->addTeams();
     }
 
     public function response_PATCH() {
