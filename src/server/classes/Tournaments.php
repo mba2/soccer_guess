@@ -87,10 +87,10 @@ require_once("DB.php");
     }
 
     public function getSpecificTournaments() {
-        $givenInfo = json_decode( $this->urlParameters['info'] );
+        $givenInfo = json_decode( $this->urlParameters['info'],true );
+        $givenInfo = array_change_key_case($givenInfo,CASE_UPPER);
 
-        
-        $ids = implode(",",$givenInfo->ids);    //CLEAN THE ARRAY OF IDS PASSED BY THE USER
+        $ids = implode(",",$givenInfo['ID']);    //CLEAN THE ARRAY OF IDS PASSED BY THE USER
         
         // ADDITIONAL OPTIONS
         // $getTeams = $givenInfo->getTeams;
@@ -123,7 +123,7 @@ require_once("DB.php");
     }
 
     public function addTournaments() {
-        $teamsInfo = json_decode( $this->urlParameters['info'] );
+        $teamsInfo = json_decode( $this->urlParameters['info'],true );
         
         try {
             $conn = (new DB())->connect();
@@ -137,8 +137,8 @@ require_once("DB.php");
             $sql_insertTournaments->bindParam(':teamFlag', $teamFlag);            
             
             foreach ($teamsInfo as $team) {
-                $teamName = $team->name;
-                $teamFlag = $team->flag;
+                $teamName = $team['name'];
+                $teamFlag = $team['flag'];
                 
                 $sql_insertTournaments->execute();    
             }

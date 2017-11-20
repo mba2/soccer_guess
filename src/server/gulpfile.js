@@ -26,16 +26,12 @@ gulp.task('clean', () => {
 // =========================
 gulp.task('copy', () => {
     const filterAppClass = _m.filter('**/App.php', {restore: true});
+    const filterResetDB  = _m.filter('**/reset-db.sql', {restore: true});
     return gulp.src([
                     './+(api|classes|configuration)/**/*',      
                 ])
                 // HANDLING ERRORS - PLUMBER`S DEFAULT BEHAVIOR
                 .pipe(_m.plumber())
-                /*
-                    WHEN RUNNING ON A PRODUCTION ENVIRONMENT... ON ALL FILES SELECTED ABOVE,
-                    FILTER THE MAIN APP CLASS NAMED 'App.php'
-                */
-                .pipe( (_m.util.env.production) ? filterAppClass : _m.util.noop() )
                 /*
                     WHEN RUNNING ON A PRODUCTION ENVIRONMENT... CHANGE THE $ENV VARIABLE 
                     VALUE FROM 'development' TO 'production'  
@@ -45,12 +41,28 @@ gulp.task('copy', () => {
                                 return match.replace(group1,'"production"'); 
                           })                
                         : _m.util.noop()
-                ) 
+                )
                 /* 
                     WHEN RUNNING ON A PRODUCTION ENVIRONMENT ....RESTORE THE INITIAL SET OF 
                     FILES DEFINED ON gulp.src().. RIGHT AFTER THE 'return' KEYWORD 
                 */
                 .pipe( (_m.util.env.production) ? filterAppClass.restore : _m.util.noop() ) 
+                /*
+                    WHEN RUNNING ON A PRODUCTION ENVIRONMENT... CHANGE THE DEFAULT SCHEMA ON USAGE 
+                    INSIDE THE FILE THAT WILL RESET THE DATABASE WHILE IN REMOTE TESTS  
+                */ 
+                .pipe( (_m.util.env.production) ? filterResetDB : _m.util.noop() )
+                .pipe( (_m.util.env.production) 
+                    ?   _m.replace(/USE\s+(.+);/, (match,group1) => {
+                            return match.replace(group1,'u989271099_sg'); 
+                        })                
+                    :   _m.util.noop()
+                )
+                /* 
+                    WHEN RUNNING ON A PRODUCTION ENVIRONMENT ....RESTORE THE INITIAL SET OF 
+                    FILES DEFINED ON gulp.src()
+                */
+                .pipe( (_m.util.env.production) ? filterResetDB.restore : _m.util.noop() ) 
                 /* 
                    WHEN RUNNING ON A PRODUCTION ENVIRONMENT... SET A DIFERENT DESTINATION PATH 
                 */

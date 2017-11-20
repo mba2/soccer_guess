@@ -1,5 +1,7 @@
 USE soccer_guess;
 
+-- ALL TOURNAMENTS
+SELECT * FROM SG_TOURNAMENTS;
 
 -- ALL TEAMS
 -- SELECT * FROM sg_teams;
