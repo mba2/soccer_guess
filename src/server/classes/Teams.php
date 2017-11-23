@@ -203,7 +203,7 @@ require_once("DB.php");
         }
     }
 
-    public function removeTournaments() {
+    public function removeTeams() {
         $teamsInfo = json_decode( $this->urlParameters['info'], true ); // DECODE THE JSON INTO AN ARRAY
         $teamsInfo = array_change_key_case($teamsInfo,CASE_UPPER);      // CONVERT THE KEYS TO UPPERCASE
 
@@ -215,27 +215,19 @@ require_once("DB.php");
 
         try {
             $conn = (new DB())->connect(); 
-            $prepareDelete = $conn->prepare("UPDATE `SG_TOURNAMENTS` SET  ACTIVE = 0 
+            $prepareDelete = $conn->prepare("UPDATE `SG_TEAMS` SET ACTIVE = 0 
                                                                     WHERE ID IN ( {$placeholders} ) ");
-            $prepareDelete->execute($ids);
-            $this->s_remove();
+            
+            if($prepareDelete->execute($ids)) {
+                if($prepareDelete->rowCount() ) $this->s_remove();
+                else $this->e_noTeamsRemoved();
+            }
+            
 
         }catch(PDOException $error) {
             echo "Message: {$error->getMessage()}<br>";
             echo "Code: {$error->getCode()}";
         } 
-
-        // $targetID = $teamsInfo['ID'];                     // STORE THE GIVEN ID
-        // $raw_dataToUpdate = array_slice($teamsInfo,1);    // STORE THE REST OF THE GIVEN DATA
-
-        // // TRANSFORM THE RAW DATA INTO A FORMAT THAT CAN BE INCLUDE IN AN UPDATE SQL STATEMENT
-        // $sql_dataToUpdate = "";
-        // foreach($raw_dataToUpdate as $info => $key) {
-        //     $sql_dataToUpdate .= " {$info} = '{$key}',";
-        // }
-        // // NOW THAT YOUR STRING IS FORMATED...REMOVE THE LAST COMMA
-        // $sql_dataToUpdate = preg_replace('/,$/im','',$sql_dataToUpdate);
-
     }
 
     // ERRORS
@@ -286,6 +278,18 @@ require_once("DB.php");
         exit();
     }
 
+    public function e_noTeamsRemoved() {
+        echo json_encode(
+            array(
+                "request type" => $_SERVER['REQUEST_METHOD'], 
+                "status" => "failure", 
+                "message" => "Sorry, could not find any team to be removed from database",
+                'code' => '005'
+            )
+        );
+        exit();
+    }
+
 
     // RESPONSES USERS FEEDBACK
     public function s_insert() {
@@ -293,7 +297,7 @@ require_once("DB.php");
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "success", 
-                "message" => "Team(s) successfully updated. Plis bilivi mi!",
+                "message" => "Team(s) successfully created. Plis bilivi mi!",
                 'code' => '101'
             )
         );
@@ -327,13 +331,13 @@ require_once("DB.php");
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "success", 
-                "message" => "Tournament(s) successfully removed. Plis bilivi mi!",
+                "message" => "Team(s) successfully removed. Plis bilivi mi!",
                 'code' => '103'
             )
         );
     }
     
-    
+   
     
     // RESPONSES
 
@@ -392,7 +396,7 @@ require_once("DB.php");
        */ 
        $this->setUrlParameters();   
 
-       $this->removeTournaments();
+       $this->removeTeams();
    }
 
     public function response() {

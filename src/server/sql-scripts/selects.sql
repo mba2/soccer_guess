@@ -1,18 +1,9 @@
-USE soccer_guess;
-
+-- USE soccer_guess;
+USE u989271099_sg;
 -- ALL TOURNAMENTS
 SELECT * FROM SG_TOURNAMENTS;
 
 -- ALL TEAMS
--- SELECT * FROM sg_teams;
+SELECT * FROM SG_TEAMS;
 
 
-
-
--- ALL GROUPS
--- SELECT * FROM sg_groups;
-
-  SELECT  *
-    FROM sg_group_formation
-    LEFT JOIN sg_teams USING(TEAM_ID)
-    LEFT JOIN sg_groups USING(GROUP_ID);
