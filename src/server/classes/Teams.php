@@ -154,7 +154,7 @@ require_once("DB.php");
         }
     }
 
-    public function updateTournaments() {
+    public function updateTeams() {
         $rawInfo = json_decode( $this->urlParameters['info'], true ); // DECODE THE JSON INTO AN ARRAY
         
         try{        
@@ -190,7 +190,7 @@ require_once("DB.php");
                 /**
                  * - CREATES A STRING TO BE SET AS CONTENT OF A PREPARE STATEMENT
                 */ 
-                $tournament["prepareStmt"] = "UPDATE `SG_TOURNAMENTS` SET " . $tournament["placeholders"] . " WHERE ID = :ID";
+                $tournament["prepareStmt"] = "UPDATE `SG_TEAMS` SET " . $tournament["placeholders"] . " WHERE ID = :ID";
                                 
                 $prepareUpdate = $conn->prepare($tournament["prepareStmt"]); // SET THE PREPARE STATEMENT
                 $prepareUpdate->execute($tournament["prepareParams"]);       // EXECUTE IT
@@ -309,7 +309,7 @@ require_once("DB.php");
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "success", 
-                "message" => "Tournament(s) successfully updated. Plis bilivi mi!",
+                "message" => "Teams(s) successfully updated. Plis bilivi mi!",
                 'code' => '101'
             )
         );
@@ -387,7 +387,7 @@ require_once("DB.php");
         */ 
         $this->setAllParameters();   
 
-        $this->updateTournaments();
+        $this->updateTeams();
     }
 
     public function response_DELETE() {
