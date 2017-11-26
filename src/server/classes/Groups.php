@@ -10,10 +10,10 @@ class Groups extends App {
     private $requestMethod;
     private $ajaxParameters;
     private $urlParameters;
+
+    private $selectStmt = "";
     
     public function __construct() { }
-
-
 
     // PARENT METHODS
     // private function setRequestMethod() {}
@@ -49,6 +49,30 @@ class Groups extends App {
             return true;                            // INDICATES THAT NONE PARAMETERS HAVE BEEN PASSED
         }
         return false; // INDICATES THAT AT LEAST ONE PARAMETER HAS BEEN PASSED
+    }
+
+    public function setSelectStmt() {
+        // IF AN ARGUMENT NAMED 'SHOWTEAMS' WAS PASSED..
+        if (array_key_exists("SHOWTEAMS", $this->urlParameters))
+        
+        {
+            $this->selectStmt = "SELECT 
+                                    G.`ID`,
+                                    G.`NAME`,
+                                    T.`NAME` AS `BELONGS TO`
+                                    FROM `SG_GROUPS` AS G
+                                    INNER JOIN `SG_TOURNAMENTS` AS T 
+                                    ON G.`TOURNAMENT_ID` = T.`ID`
+                                    WHERE G.`ACTIVE` != 0
+                                    ORDER BY(G.`ID`)"; 
+        }
+        else 
+        {
+                                // $this->selectStmt =  "SELECT `ID`,`NAME` FROM `SG_GROUPS`
+                                //                         WHERE `ID` IN ({$placeholders})
+                                //                         AND `ACTIVE` != '0';"; 
+
+        } 
     }
 
     function retrieveAllTeams() {
@@ -97,70 +121,117 @@ class Groups extends App {
         ); 
         
         echo json_encode($groups);
-    } 
-    
-    public function getAllTeams() {
+    }   
+
+    public function getAllGroups() {
         try{
-            // STARTS A CONNECTION
-            $conn = (new DB())->connect();                  
+            $conn = (new DB())->connect();  // STARTS A CONNECTION
+
             // DEFINES A SQL STATEMENT
-            $sql_selectTeams = "SELECT 
-                            `ID`,
-                            `FULLNAME`,
-                            `SHORTNAME`,
-                            `FLAG` FROM `SG_TEAMS`
-                             WHERE `ACTIVE` != '0';";    
-            // PREPARES THE QUERY
-            $prepareSelect = $conn->prepare($sql_selectTeams);  
+            
+            if (array_key_exists("showTeams", $this->urlParameters)) 
+            {
+                $this->selectStmt =  
+                    "SELECT 
+                    `TOR`.`ID` AS 'tournamentId',
+                    `TOR`.`NAME` AS 'tournament',
+                    `G`.`ID` AS 'groupId',
+                    `G`.`NAME` AS 'group',
+                    `TE`.`FULLNAME` AS 'team',
+                    `TE`.`SHORTNAME` AS 'shortname',
+                    `TE`.`FLAG` AS 'flag'
+                        FROM `SG_GROUP_FORMATIONS`AS `F`
+                        INNER JOIN `SG_GROUPS` AS `G` ON(`G`.`ID` = `F`.`GROUP_ID`)
+                        INNER JOIN `SG_TOURNAMENTS` AS `TOR` ON(`G`.`TOURNAMENT_ID` = `TOR`.`ID`)
+                        INNER JOIN `SG_TEAMS` AS `TE` ON(`TE`.`ID` = `F`.`TEAM_ID`)";
+            }
+            else 
+            {
+                $this->selectStmt =  
+                    "SELECT 
+                        G.`ID`,
+                        G.`NAME`,
+                        T.`NAME` AS `BELONGS TO`
+                        FROM `SG_GROUPS` AS G
+                        INNER JOIN `SG_TOURNAMENTS` AS T ON G.`TOURNAMENT_ID` = T.`ID`";
+            }
+
+            $this->selectStmt .= "WHERE T.`ACTIVE` != '0';"; 
+
+            $prepareSelect = $conn->prepare($this->selectStmt);  // PREPARES THE QUERY
             
             if($prepareSelect->execute() && $prepareSelect->rowCount()) {
                 $result = $prepareSelect->fetchAll(PDO::FETCH_ASSOC);
-                echo json_encode($result);
+                return $result;
             }
-            else  $this->e_noTeamsFound();
+            else  $this->e_noGroupsFound();
         } catch(PDOExeption $error) {
-            echo "Message: {$error->getMessage()}<br>";
-            echo "Code: {$error->getCode()}";
+            $stateError = $error->errorInfo[0];
+            $codeError = $error->errorInfo[1];
+            $specificMessage = $error->errorInfo[2];            
+            echo $genericMessage = $error->getMessage();
         }
         exit();
     }
 
-    public function getSpecificTeams() {
+    public function getSpecificGroups() {
         $teamsInfo = json_decode( $this->urlParameters['info'],true );
         $teamsInfo = array_change_key_case($teamsInfo,CASE_UPPER);
 
-        
-        // ADDITIONAL OPTIONS
-        // $getTeams = $givenInfo->getTeams;
-        // if($getTeams) {
-            //     $sql_allTournamentsWithTeams = "SEle.....";
-            // } 
         try {
-            // START A CONNECTION
-            $conn = (new DB())->connect();              
-            // STORE THE ARRAY CONTAINING ALL DESIRED ID'S
-            $ids = $teamsInfo['ID'];    
-            // CREATE THE PLACEHOLDERS TO BE USED WITH ->bindValue()
-            $placeholders = implode(",", array_fill(0, count($ids),"?"));
-            // DEFINES A SQL STATEMENT
-            $sql_selectTeams = "SELECT 
-                `ID`,
-                `FULLNAME`,
-                `SHORTNAME`,
-                `FLAG` FROM `SG_TEAMS`
-                    WHERE `ID` IN ({$placeholders})
-                    AND `ACTIVE` != '0';";    
-            // PREPARES THE QUERY
-            $prepareSelect = $conn->prepare($sql_selectTeams);  
-            // EXECUTE IT            
+            
+            $conn = (new DB())->connect();  // START A CONNECTION
+            
+            $ids = $teamsInfo['ID'];   // STORE THE ARRAY CONTAINING ALL DESIRED ID'S  
+            
+            $placeholders = implode(",", array_fill(0, count($ids),"?")); // CREATE THE PLACEHOLDERS TO BE USED WITH ->bindValue()
+
+             // DEFINES A SQL STATEMENT
+            if (array_key_exists("showTeams", $this->urlParameters)) 
+            {
+                $this->selectStmt =  
+                    "SELECT 
+                    `TOR`.`ID` AS 'tournamentId',
+                    `TOR`.`NAME` AS 'tournament',
+                    `G`.`ID` AS 'groupId',
+                    `G`.`NAME` AS 'group',
+                    `TE`.`FULLNAME` AS 'team',
+                    `TE`.`SHORTNAME` AS 'shortname',
+                    `TE`.`FLAG` AS 'flag'
+                        FROM `SG_GROUP_FORMATIONS`AS `F`
+                        INNER JOIN `SG_GROUPS` AS `G` ON(`G`.`ID` = `F`.`GROUP_ID`)
+                        INNER JOIN `SG_TOURNAMENTS` AS `TOR` ON(`G`.`TOURNAMENT_ID` = `TOR`.`ID`)
+                        INNER JOIN `SG_TEAMS` AS `TE` ON(`TE`.`ID` = `F`.`TEAM_ID`)
+                        WHERE G.`ID` IN ({$placeholders})";
+            }
+            else 
+            {
+                $this->selectStmt =  
+                    "SELECT 
+                        G.`ID`,
+                        G.`NAME`,
+                        T.`NAME` AS `BELONGS TO`
+                        FROM `SG_GROUPS` AS G
+                        INNER JOIN `SG_TOURNAMENTS` AS T ON G.`TOURNAMENT_ID` = T.`ID`
+                            WHERE G.`ID` IN ({$placeholders})";
+            }
+            
+            $prepareSelect = $conn->prepare($this->selectStmt);  // PREPARES THE QUERY
+       
+            // EXECUTE IT AND IF THE QUERY RAN SUCCESSFULLY AND AT LEAST ONE RESULT WAS RETURNED...           
             if($prepareSelect->execute($ids) && $prepareSelect->rowCount()) {
-                // IF THE QUERY RAN SUCCESSFULLY AND AT LEAST ONE RESULT WAS RETURNED...
-                $result = $prepareSelect->fetchAll(PDO::FETCH_ASSOC);   // FETCH THE RESULT IN AN ASSOCIATIVE ARRAY
-                echo json_encode($result);      // AND PRINT IT
-            }else $this->e_noTeamsFound();
-        }catch(PDOException $error){
-            echo "Message: {$error->getMessage()}<br>";
-            echo "Code: {$error->getCode()}";
+
+                $result = $prepareSelect->fetchAll(PDO::FETCH_ASSOC);     // FETCH THE RESULT IN AN ASSOCIATIVE ARRAY
+       
+                echo json_encode($result);  // AND PRINT IT
+            }
+            else $this->e_noGroupsFound();
+        }
+        catch(PDOException $error){
+            $stateError = $error->errorInfo[0];
+            $codeError = $error->errorInfo[1];
+            $specificMessage = $error->errorInfo[2];            
+            echo $genericMessage = $error->getMessage();
         }
     }
 
@@ -170,33 +241,65 @@ class Groups extends App {
         try {
             $conn = (new DB())->connect();
 
-            // MOUNT THE SQL STATEMENT
-            $sql_insertGroups = $conn->prepare("INSERT INTO `SOCCER_GUESS`.`SG_GROUPS` 
-                                                            (`NAME`,
-                                                            `TOURNAMENT_ID`)
-                                                        VALUES 
-                                                            (:name, 
-                                                            :tournamentId)");
+            // CREATE A SELECT STMT, SEARCHING FOR TOURNAMENTS BASED ON THE ID'S GIVEN BY THE USER
+            // AND THOSE TOURNAMENTS MUST EXIST (BE ACTIVE) 
+            $sql_selectStmt = 
+                "SELECT *
+                    FROM `SG_TOURNAMENTS` AS `TOR`
+                    WHERE 
+                        `TOR`.`ACTIVE` != '0' AND
+                        `ID` = :tournamentId";
+            $sql_selectPreapare = $conn->prepare($sql_selectStmt); // PREPARE THE QUERY
 
-            $sql_insertGroups->bindParam(':name' , $name);
-            $sql_insertGroups->bindParam(':tournamentId', $tournamentId);            
-            
-            foreach ($groupsInfo as $group) {
-                $group = array_change_key_case($group,CASE_UPPER);
+            /**
+             * THIS ITERATION WILL SPLIT THE TOURNAMENTS' INFO IN TWO PARTS :
+             *  -- A GROUP THAT WAS SUPPOSED TO BE INSERT IN A TOURNAMENT DOESN'T EXIST WON'T BE INSERTED IN THE DATABASE
+             *  -- A GROUP THAT WAS SUPPOSED TO BE INSERT IN A TOURNAMENT EXISTS WILL BE INSERTED IN THE DATABASE
+            */ 
+            foreach ($groupsInfo as $group) {                
+                $groupName = $group['groupName'];
+                $tournamentId = $group['tournamentId'];
                 
-                $name = $group['GROUPNAME'];
-                $tournamentId = $group['TOURNAMENTID'];
+                $sql_selectPreapare->bindParam(':tournamentId', $tournamentId); // BIND THE 'TOURNAMENT ID' PARAMETER THAT WILL BE PASSED...SOON             
                 
-                $sql_insertGroups->execute();    
+                if($sql_selectPreapare->execute() && $sql_selectPreapare->rowCount()) 
+                {
+                    $groupsInfo['infoToBeInserted'][] = $group;
+                    
+                }else $groupsInfo['infoToBeIgnored'][] = $group;
+            }
+
+             // CLOSE THIS METHOD IF THERE'S NOTHING VALID TO BE INSERTED   
+            if( empty($groupsInfo['infoToBeInserted']) ) $this->e_nonExistingTournament();
+
+            // CREATE A INSERT STMT 
+            $sql_insertStmt =    
+                "INSERT INTO `SG_GROUPS` 
+                        (`NAME`,
+                        `TOURNAMENT_ID`)
+                    VALUES 
+                        (:groupName, 
+                        :tournamentId)";            
+            $sql_insertPrepare = $conn->prepare($sql_insertStmt);           // PREPARE THE QUERY
+
+            /**
+             * THIS ITERATION WILL INSERT GROUPS THAT ARE CAN BE BINDED TO EXISTING TOURNAMENTS
+            */
+            foreach ($groupsInfo['infoToBeInserted'] as $group) { 
+                $groupName = $group['groupName'];
+                $tournamentId = $group['tournamentId'];
+
+                $sql_insertPrepare->bindParam(':groupName' , $groupName);         // BIND THE 'GROUP NAME' PARAMETER THAT WILL BE PASSED...SOON  
+                $sql_insertPrepare->bindParam(':tournamentId', $tournamentId);    // BIND THE 'TOURNAMENT ID' PARAMETER THAT WILL BE PASSED...SOON  
+                $sql_insertPrepare->execute(); 
             }
 
             $this->s_insert();
         }catch(PDOException $error){
-            // print_r($error->errorInfo);
             $stateError = $error->errorInfo[0];
             $codeError = $error->errorInfo[1];
             $specificMessage = $error->errorInfo[2];            
-            echo $genericMessage = $error->getMessage();
+            // echo $genericMessage = $error->getMessage();
 
             if($codeError == $this->MYSQL_DUPLICATED_KEY) $this->e_alreadyExistingGroup();
             if($codeError == $this->MYSQL_FOREIGN_KEY_FAILS ) $this->e_nonExistingTournament();
@@ -204,24 +307,24 @@ class Groups extends App {
     }
 
     public function updateGroups() {
-        $rawInfo = json_decode( $this->urlParameters['info'], true ); // DECODE THE JSON INTO AN ARRAY
+        $groupsInfo = json_decode( $this->urlParameters['info'], true ); // DECODE THE JSON INTO AN ARRAY
         
         try{        
             $conn = (new DB())->connect();   
         
-            foreach($rawInfo as &$tournament) {
+            foreach($groupsInfo as &$group) {
                 /**
                  * CONVERTS ALL KEYS TO UPPERCASE. 
-                 * THE REASON IS THAT ALL COLUMNS NAMES ON DATABASE ARE CURRENTLY IN UPPERCASE
+                 * THE REASON IS THAT ALL COLUMN'S NAMES ON DATABASE ARE CURRENTLY IN UPPERCASE
                 */   
-                $tournament = array_change_key_case($tournament,CASE_UPPER);        
+                $group = array_change_key_case($group,CASE_UPPER);        
                 /**
-                 * RETURNS ALL PROPERTIES OF THE ARRAY GIVEN BY THE USER BUT THE 'ID' PROPERTY. T
-                 * THIS NEW ARRAY WILL CONTAING ALL FIELDS AND ITS VALUES THAT SHOULD BE UPDATED. 
+                 * RETURNS ALL PROPERTIES OF THE ARRAY THAT'S GIVEN BY THE USER BUT THE 'ID' PROPERTY. T
+                 * THIS NEW ARRAY WILL CONTAIN ALL FIELDS (AND ITS VALUES) THAT SHOULD BE UPDATED. 
                 */  
-                $dataToUpdate = array_slice($tournament,1);
+                $dataToUpdate = array_slice($group,1);
 
-                $tournament["prepareParams"] = array_slice($tournament,0);
+                $group["prepareParams"] = array_slice($group,0);
             
                 /**
                  * GERERATES SQL SYNTAX FORMAT AND STORE THEM INTO THE TEMPORARY ARRAY
@@ -235,47 +338,67 @@ class Groups extends App {
                  * - CONVERTS THE ARRAY INTO A STRING, WITH ITS ITEMS SEPARETED BY COMMA 
                  * - REMOVES A WHITESPACE AT THE STRING'S START
                 */ 
-                $tournament["placeholders"] = ltrim(implode(",",$temp));  
+                $group["placeholders"] = ltrim(implode(",",$temp));  
                 /**
                  * - CREATES A STRING TO BE SET AS CONTENT OF A PREPARE STATEMENT
                 */ 
-                $tournament["prepareStmt"] = "UPDATE `SG_TEAMS` SET " . $tournament["placeholders"] . " WHERE ID = :ID";
+                $group["prepareStmt"] = "UPDATE `SG_GROUPS` SET " . $group["placeholders"] . " WHERE (ID = :ID AND ACTIVE != 0)";
                                 
-                $prepareUpdate = $conn->prepare($tournament["prepareStmt"]); // SET THE PREPARE STATEMENT
-                $prepareUpdate->execute($tournament["prepareParams"]);       // EXECUTE IT
+                $prepareUpdate = $conn->prepare($group["prepareStmt"]); // SET THE PREPARE STATEMENT
+                // EXECUTE IT
+                if( $prepareUpdate->execute($group["prepareParams"]) ) 
+                {
+                    if( !$prepareUpdate->rowCount() ) 
+                    {
+                        $this->e_updates();
+                        exit();
+                    }
+                    
+                }       
+                    
 
             }
             $this->s_update(); // OUTPUT THE SUCCESS RESULT   
         }catch(PDOException $error){
-            echo "Message: {$error->getMessage()}";
-            echo "\nCode: {$error->getCode()}";
+            $stateError = $error->errorInfo[0];
+            $codeError = $error->errorInfo[1];
+            $specificMessage = $error->errorInfo[2];            
+            echo $genericMessage = $error->getMessage();
+
+            if($codeError == $this->MYSQL_DUPLICATED_KEY) $this->e_alreadyExistingGroup();
+            // if($codeError == $this->MYSQL_FOREIGN_KEY_FAILS ) $this->e_nonExistingTournament();
         }
     }
 
     public function removeGroups() {
-        $teamsInfo = json_decode( $this->urlParameters['info'], true ); // DECODE THE JSON INTO AN ARRAY
-        $teamsInfo = array_change_key_case($teamsInfo,CASE_UPPER);      // CONVERT THE KEYS TO UPPERCASE
+        $groupsInfo = json_decode( $this->urlParameters['info'], true ); // DECODE THE JSON INTO AN ARRAY
+        $groupsInfo = array_change_key_case($groupsInfo,CASE_UPPER);      // CONVERT THE KEYS TO UPPERCASE
 
         /**
          * BUILDS THE PARAMETERS STRUCUTURE TO BE USED IN A PREPARE STATEMENT
         */
-        $ids = $teamsInfo['ID'];                                        // CONVERT THE GIVEN ID'S TO A SQL SYNTAX FORMAT
+        $ids = $groupsInfo['ID'];                                        // CONVERT THE GIVEN ID'S TO A SQL SYNTAX FORMAT
         $placeholders = implode(",", array_fill(0,count($ids),"?") );   // PREPARE PLACEHOLDERS
 
         try {
             $conn = (new DB())->connect(); 
-            $prepareDelete = $conn->prepare("UPDATE `SG_TEAMS` SET ACTIVE = 0 
+            $prepareDelete = $conn->prepare("UPDATE `SG_GROUPS` SET ACTIVE = 0 
                                                                     WHERE ID IN ( {$placeholders} ) ");
             
             if($prepareDelete->execute($ids)) {
                 if($prepareDelete->rowCount() ) $this->s_remove();
-                else $this->e_noTeamsRemoved();
+                else $this->e_noGroupsRemoved();
             }
             
 
         }catch(PDOException $error) {
-            echo "Message: {$error->getMessage()}<br>";
-            echo "Code: {$error->getCode()}";
+            $stateError = $error->errorInfo[0];
+            $codeError = $error->errorInfo[1];
+            $specificMessage = $error->errorInfo[2];            
+            echo $genericMessage = $error->getMessage();
+
+            // if($codeError == $this->MYSQL_DUPLICATED_KEY) $this->e_alreadyExistingGroup();
+            // if($codeError == $this->MYSQL_FOREIGN_KEY_FAILS ) $this->e_nonExistingTournament();
         } 
     }
 
@@ -308,7 +431,7 @@ class Groups extends App {
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "failure", 
-                "message" => "Sorry, could not find any team on database",
+                "message" => "Sorry, could not find any Group on database",
                 'code' => '001'
             )
         );
@@ -320,8 +443,9 @@ class Groups extends App {
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "failure", 
-                "message" => "No record updated. Check if the 'identification' that was passed is correct OR if the field's content you want to update are diffent than the previous ones.",
-                'code' => '004'
+                "message" => "No record(s) updated. Check for ALL GROUPS you want to remove: if the 'identification' that was passed is correct OR if the group was removed OR if the field's content you want to update are the same than the previous ones.",
+                'code' => '004',
+                'active groups' => $this->getAllGroups()
             )
         );
         exit();
@@ -332,7 +456,7 @@ class Groups extends App {
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "failure", 
-                "message" => "Sorry, could not find any team to be removed from database",
+                "message" => "Sorry, could not find any Group to be removed from database",
                 'code' => '005'
             )
         );
@@ -350,12 +474,13 @@ class Groups extends App {
         );
         exit();
     }
+
     public function e_nonExistingTournament() {
         echo json_encode(
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "failure", 
-                "message" => "The tournament that you've tried to add this group doesn't exist yet. Please create it first!",
+                "message" => "The tournament that you've tried to add this group(s) do(es) not exist(s) yet. Please create tournament(s) first!",
                 'code' => '007'
             )
         );
@@ -385,8 +510,9 @@ class Groups extends App {
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "success", 
-                "message" => "Teams(s) successfully updated. Plis bilivi mi!",
-                'code' => '101'
+                "message" => "Group(s) successfully updated. You're god damn right!",
+                'code' => '101',
+                'active groups' => $this->getAllGroups()
             )
         );
     }
@@ -407,7 +533,7 @@ class Groups extends App {
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
                 "status" => "success", 
-                "message" => "Team(s) successfully removed. Plis bilivi mi!",
+                "message" => "Group(s) successfully removed. Plis bilivi mi!",
                 'code' => '103'
             )
         );
@@ -419,33 +545,38 @@ class Groups extends App {
 
     public function response_GET() {
         /* 
-        * SINCE IT'S A 'GET' REQUEST WE'RE ONLY GONNA NEED PARAMETERS PRESENT INSIDE THE $_GET SUPERGLOBAL. SO, SET THOSE...
+            * SINCE IT'S A 'GET' REQUEST WE'RE ONLY GONNA NEED PARAMETERS PRESENT INSIDE THE $_GET SUPERGLOBAL. SO, SET THOSE...
         */ 
-        $this->setUrlParameters();   
+        $this->setUrlParameters();  
     
         /*  
-        *   TERMINATE THIS FUNCTION IF:        *
-        *       - MORE THAN ONE PARAMETERS WERE PASSED... 
-        *       - AN ARGUMENT NAMED 'info' WASN'T PASSED... 
+            *   TERMINATE THIS FUNCTION IF:        
+            *       - MORE THAN ONE PARAMETERS WERE PASSED... 
+            *       - AN ARGUMENT NAMED 'info' WASN'T PASSED... 
         */
         if( sizeof($this->urlParameters) > 1) {
-            if( !key_exists("info",$this->urlParameters)) $this->e_invalidStructure();
+            if( 
+                !key_exists("info",$this->urlParameters) ||
+                !key_exists("showTeams",$this->urlParameters)
+            ) $this->e_invalidStructure();
         } 
 
         /* 
          * WHEN THE GET REQUEST HAS NO PARAMETERS...RETRIEVE ALL TOURNAMENTS
         */
-        if( $this->emptyParameters(false) ) $this->getAllTeams();
-
+        if( 
+            $this->emptyParameters(false) || 
+            ( !key_exists("info",$this->urlParameters) && key_exists("showTeams",$this->urlParameters) )
+        ) 
+        {
+            echo json_encode($this->getAllGroups());
+            exit();
+        }
         /* 
          * WHEN THE GET REQUEST HA PARAMETERS AND THEY'RE VALID... RETRIEVE THE REQUIRED TOURNAMENTS
         */
-        $this->getSpecificTeams(); 
-
-
-        // TREAT THE RECEIVED STRING AND FIXES SOME POSSIBLE ERRORS : e.g REMOVE WHITESPACES, UNEXPECTED COMMAS AND SO ON...
-        // $ids = preg_replace('/,[\s,]+/i',',',$ids);  
-        // $ids = preg_replace('/,$/i','',$ids);
+        echo $this->getSpecificGroups(); 
+        exit();
     }
 
     public function response_POST() {
@@ -463,7 +594,7 @@ class Groups extends App {
         */ 
         $this->setAllParameters();   
 
-        $this->updateTeams();
+        $this->updateGroups();
     }
 
     public function response_DELETE() {
@@ -472,7 +603,7 @@ class Groups extends App {
        */ 
        $this->setUrlParameters();   
 
-       $this->removeTeams();
+       $this->removeGroups();
    }
 
     public function response() {

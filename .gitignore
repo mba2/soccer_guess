@@ -20,5 +20,6 @@
 .DS_Store
 Thumbs.db
 src/server/configuration/*
+/npm-debug.log
 
 

@@ -24,7 +24,7 @@ require_once("DB.php");
     // }
     
     private function setUrlParameters() {
-        return $this->urlParameters = $_GET;                                   // SET ALL POSSIBLE PARAMETERS PASSED BY URL 
+        return $this->urlParameters = array_change_key_case($_GET,CASE_UPPER);                                   // SET ALL POSSIBLE PARAMETERS PASSED BY URL 
     }
     
     private function setAjaxParameters() {
@@ -79,15 +79,9 @@ require_once("DB.php");
     }
 
     public function getSpecificTeams() {
-        $teamsInfo = json_decode( $this->urlParameters['info'],true );
+        $teamsInfo = json_decode( $this->urlParameters['INFO'],true );
         $teamsInfo = array_change_key_case($teamsInfo,CASE_UPPER);
 
-        
-        // ADDITIONAL OPTIONS
-        // $getTeams = $givenInfo->getTeams;
-        // if($getTeams) {
-            //     $sql_allTournamentsWithTeams = "SEle.....";
-            // } 
         try {
             // START A CONNECTION
             $conn = (new DB())->connect();              
@@ -112,13 +106,18 @@ require_once("DB.php");
                 echo json_encode($result);      // AND PRINT IT
             }else $this->e_noTeamsFound();
         }catch(PDOException $error){
-            echo "Message: {$error->getMessage()}<br>";
-            echo "Code: {$error->getCode()}";
+            $stateError = $error->errorInfo[0];
+            $codeError = $error->errorInfo[1];
+            $specificMessage = $error->errorInfo[2];            
+            echo $genericMessage = $error->getMessage();
+
+            // if($codeError == $this->MYSQL_DUPLICATED_KEY) $this->e_DK();
+            // if($codeError == $this->MYSQL_FOREIGN_KEY_FAILS ) $this->e_FK();
         }
     }
-
-    public function addTeams() {
-        $teamsInfo = json_decode( $this->urlParameters['info'],true );
+    
+    public function createTeams() {
+        $teamsInfo = json_decode( $this->urlParameters["CREATE"],true );
         
         try {
             $conn = (new DB())->connect();
@@ -147,10 +146,58 @@ require_once("DB.php");
                 $sql_insertTeams->execute();    
             }
 
+            $this->s_create();
+        }catch(PDOException $error){
+            $stateError = $error->errorInfo[0];
+            $codeError = $error->errorInfo[1];
+            $specificMessage = $error->errorInfo[2];            
+            echo $genericMessage = $error->getMessage();
+
+            // if($codeError == $this->MYSQL_DUPLICATED_KEY) $this->e_DK();
+            // if($codeError == $this->MYSQL_FOREIGN_KEY_FAILS ) $this->e_FK();
+        }
+    }
+
+    public function insertTeams() {
+        $teamsInfo = json_decode( $this->urlParameters['ADD'],true );
+        
+        try {
+            $conn = (new DB())->connect();
+
+            // MOUNT THE SQL STATEMENT
+            $sql_insertTeams = $conn->prepare(
+                "INSERT INTO `SG_GROUP_FORMATIONS` 
+                    ( 
+                        TEAM_ID,
+                        GROUP_ID
+                    ) VALUES  
+                    (
+                        :teamId,
+                        :groupId 
+                    )"
+            );
+
+            $sql_insertTeams->bindParam(':teamId', $teamId);            
+            $sql_insertTeams->bindParam(':groupId' , $groupId);
+            
+            foreach ($teamsInfo as $team) {
+                $team = array_change_key_case($team,CASE_UPPER);
+                
+                $teamId   = $team['TEAMID'];
+                $groupId  = $team['GROUPID'];
+
+                $sql_insertTeams->execute();    
+            }
+
             $this->s_insert();
         }catch(PDOException $error){
-            echo "Message: {$error->getMessage()}<br>";
-            echo "Code: {$error->getCode()}";
+            $stateError = $error->errorInfo[0];
+            $codeError = $error->errorInfo[1];
+            $specificMessage = $error->errorInfo[2];            
+            echo $genericMessage = $error->getMessage();
+
+            // if($codeError == $this->MYSQL_DUPLICATED_KEY) $this->e_DK();
+            // if($codeError == $this->MYSQL_FOREIGN_KEY_FAILS ) $this->e_FK();
         }
     }
 
@@ -290,9 +337,47 @@ require_once("DB.php");
         exit();
     }
 
+    public function e_FK() {
+        echo json_encode(
+            array(
+                "request type" => $_SERVER['REQUEST_METHOD'], 
+                "status" => "failure", 
+                "message" => "Sorry, non existing groupId or teamID.",
+                'code' => '006'
+            )
+        );
+        exit();
+    }
+    public function e_DK() {
+        echo json_encode(
+            array(
+                "request type" => $_SERVER['REQUEST_METHOD'], 
+                "status" => "failure", 
+                "message" => "Sorry, this team is already inserted in a tournament.",
+                'code' => '007'
+            )
+        );
+        exit();
+    }
+    // MYSQL ERROR LIST
+    private $MYSQL_DUPLICATED_KEY = 1062;
+    private $MYSQL_FOREIGN_KEY_FAILS = 1452;
+    
 
     // RESPONSES USERS FEEDBACK
     public function s_insert() {
+        echo json_encode(
+            array(
+                "request type" => $_SERVER['REQUEST_METHOD'], 
+                "status" => "success", 
+                "message" => "Team(s) successfully inserted in tournaments. Plis bilivi mi!",
+                'code' => '101'
+            )
+        );
+        exit();
+    }
+
+    public function s_create() {
         echo json_encode(
             array(
                 "request type" => $_SERVER['REQUEST_METHOD'], 
@@ -378,7 +463,10 @@ require_once("DB.php");
         */ 
         $this->setAllParameters();   
 
-        $this->addTeams();
+        (array_key_exists("CREATE", $this->urlParameters)) 
+        ? $this->createTeams() 
+        : $this->insertTeams();   
+        
     }
 
     public function response_PATCH() {

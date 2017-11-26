@@ -33,18 +33,18 @@ INSERT INTO SG_TEAMS VALUES
   (NULL,'EQUADOR','13','EQUADOR.png',1),
   (NULL,'PORTUGAL','14','PORTUGAL.png',1);
 
-INSERT INTO SG_GROUP_FORMATIONS (GROUP_ID,TEAM_ID) VALUES 
+INSERT INTO SG_GROUP_FORMATIONS (TEAM_ID,GROUP_ID) VALUES 
 (1,1),
 (2,2),
-(1,3),
-(2,4),
-(1,5),
-(2,6),
-(2,7),
-(1,8),
-(1,9),
-(3,10),
-(3,11),
-(3,12),
-(1,13),
-(3,14);
+(3,1),
+(4,2),
+(5,1),
+(6,2),
+(7,2),
+(8,1),
+(9,1),
+(10,2),
+(11,2),
+(12,2),
+(13,2),
+(14,2);
